@@ -1,0 +1,51 @@
+ol, ul {
+    list-style-position: inside;
+}
+a {color: #000;}
+body{font-family: Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif;
+background-image: url('../scratch/imgs/cool-background.png');
+background-size: cover;
+background-repeat: no-repeat;
+background-color: lightblue;
+margin: 0;
+padding: 0;
+}
+
+.container {
+text-align: center; /* Centers text inside the container */
+max-width: 800px; /* Optional: Limits the width of the content */
+margin: auto; /* Ensures the container is centered */
+}
+
+h1{
+    text-align: center;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 2em;
+}
+
+img{
+    border: 5px solid orange;
+    padding: 4px;
+    
+    height : 300px
+}
+.rizz{
+    font-family:'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
+    font-size: 4em;
+    color:chartreuse;
+    text-decoration : underline;
+    text-decoration-color : rgb(5, 255, 168);
+}
+.rizz:hover{
+    font-size: 450%;
+    color: red;
+    text-decoration : underline;
+}
+
+.li:hover{
+    text-decoration: underline;
+    background-image: url('https://static.wikia.nocookie.net/universalstudios/images/f/f2/Shrek2-disneyscreencaps.com-4369.jpg/revision/latest?cb=20250224023204');
+}
+.bigIMG{
+    height : 500px;
+}

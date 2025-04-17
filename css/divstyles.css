@@ -1,0 +1,47 @@
+.common{
+
+    color: white;
+    border: 2px solid rgba(255, 255, 255, 0);
+}
+.nav{
+    position: fixed;
+    float: right;
+    height: 100px;
+    width: 90%;
+    right: 5%;
+    text-align: right;
+    padding-top: 40px;
+
+}
+.footer
+{
+    bottom: 0px;
+    left: 5%;
+    right: 5%;
+    height: 50px;
+    text-align: center;
+    background-color: rgba(119, 193, 222, 0.456);
+    position: fixed;
+
+}
+.header
+{
+    top: 0px;
+    bottom: 791px;
+    height: 100px;
+    left: 10%;
+    right: 10%;
+    text-align: center;
+    background-color: rgba(119, 193, 222, 0.456);
+    z-index: -1;
+}
+.content
+{
+    text-align: center;
+    top: 60px;
+    bottom: 55px;
+    left: 10%;
+    right: 10%;
+    background-color: rgba(80, 86, 163, 0.456);
+}
+

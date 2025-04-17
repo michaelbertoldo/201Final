@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Color Dodger v9 (Enhanced Visuals)</title> <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: #222;
+            margin: 0;
+            font-family: 'Press Start 2P', cursive;
+            color: #fff;
+            overflow: auto;
+            padding-top: 70px;
+            padding-bottom: 100px;
+        }
+
+        #game-container {
+            border: 5px solid #555;
+            border-radius: 15px;
+            padding: 20px;
+            background-color: #333;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+            text-align: center;
+        }
+
+        #game-title {
+            font-size: 28px;
+            color: #FFFF00;
+            margin-bottom: 15px;
+            text-shadow: 2px 2px #FF0000;
+        }
+
+        #ui-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            margin-bottom: 15px;
+            padding: 0 5px;
+        }
+
+        #score, #lives, #safe-color-info, #safe-collected {
+             font-size: 14px;
+             margin: 5px 8px;
+             white-space: nowrap;
+        }
+
+        #safe-color-display {
+            width: 25px;
+            height: 25px;
+            border: 2px solid #fff;
+            border-radius: 5px;
+            display: inline-block;
+            vertical-align: middle;
+            margin-left: 8px;
+            box-shadow: 0 0 5px rgba(255, 255, 255, 0.5);
+        }
+
+        canvas {
+            background: linear-gradient(to bottom, #87CEEB, #ADD8E6);
+            display: block;
+            margin: 0 auto;
+            border-radius: 10px;
+            box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.2);
+            max-width: 100%;
+        }
+
+         #game-over-message {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(0, 0, 0, 0.85);
+            color: white;
+            padding: 30px 40px;
+            border-radius: 15px;
+            text-align: center;
+            font-size: 24px;
+            display: none;
+            z-index: 10;
+            border: 3px solid #fff;
+            box-shadow: 0 0 25px rgba(255, 255, 255, 0.6);
+        }
+
+        #restart-button {
+            margin-top: 20px;
+            padding: 12px 22px;
+            font-size: 18px;
+            font-family: 'Press Start 2P', cursive;
+            cursor: pointer;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+            transition: background-color 0.3s ease, transform 0.1s ease;
+        }
+
+        #restart-button:hover {
+            background-color: #45a049;
+        }
+         #restart-button:active {
+            transform: translateY(2px);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Shake animation */
+         @keyframes shake {
+             0%, 100% { transform: translateX(0); }
+             25% { transform: translateX(-5px); }
+             50% { transform: translateX(5px); }
+             75% { transform: translateX(-3px); }
+         }
+         body.shake {
+            animation: shake 0.15s;
+         }
+
+    </style>
+</head>
+<body>
+    <h1></h1>
+    <br><br><br>
+    <div class="common nav">Navigation &nbsp; | &nbsp;
+        <a href="scratch/index.html" style="color: white;">Ice Cream Website</a> &nbsp; | &nbsp;
+        <a href="scratch/home.html" style="color: white;">Home</a>
+        <br> <br> <br>
+        <h1>Directions!</h1> <br>
+        <p>- Use the left and right arrow keys to move the player. <br> <br>- The goal is to dodge the falling shapes while collecting the safe color shapes. <br> <br>
+            - The game ends when you lose all your lives.<br> <br>- You get an extra life each time you collect 20 safe colors. <br><br> Good Luck!!! </p>
+            <br><br>
+
+    <div id="game-container">
+        <h1 id="game-title">COLOR DODGER</h1>
+        <div id="ui-container">
+            <div id="score">Score: 0</div>
+            <div id="safe-collected">Safe Hit: 0</div>
+            <div id="safe-color-info">
+                Safe: <span id="safe-color-display"></span>
+            </div>
+            <div id="lives">Lives: ❤️❤️❤️</div>
+        </div>
+        <canvas id="gameCanvas" width="600" height="400"></canvas>
+    </div>
+
+    <div id="game-over-message">
+        Game Over!
+        <div id="final-score">Final Score: 0</div>
+        <button id="restart-button">Restart</button>
+    </div>
+
+    <script>
+        // --- Canvas and Context ---
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- Game Configuration ---
+        const playerWidth = 20;
+        const playerHeight = 40;
+        const playerSpeed = 5;
+        const grassHeight = 20;
+        const shapeSize = 25;
+        const initialShapeFallSpeed = 2;
+        const initialMultiSpawnChance = 0.25;
+        const maxMultiSpawnChance = 0.6;
+        const difficultyIncreaseInterval = 3;
+        let shapeFallSpeed = initialShapeFallSpeed;
+        let multiSpawnChance = initialMultiSpawnChance;
+        let shapeSpawnInterval = 850;
+        const maxShapesPerSpawn = 3;
+        const fixedShapesAfterScore = 5;
+        const fixedShapesScoreThreshold = 20;
+        const safeColorChangeInterval = 6000;
+        const initialLives = 3;
+        const safeHitsForLife = 20;
+        const colors = ['#FF0000', '#0000FF', '#00FF00', '#FFFF00', '#FF00FF', '#00FFFF'];
+        const shoeColor = '#8B4513'; // Brown
+        const sunColor = '#FFFF00'; // Yellow
+        const sunRadius = 30;
+        const cloudColor = '#FFFFFF'; // White
+        const treeTrunkColor = '#8B4513'; // Brown
+        const treeLeavesColor = '#228B22'; // Forest Green
+
+        // --- Game State Variables ---
+        let playerX = canvas.width / 2 - playerWidth / 2;
+        let lives = initialLives;
+        let score = 0;
+        let safeShapesCollected = 0;
+        let safeColor = colors[0];
+        let shapes = [];
+        let gameOver = false;
+        let scoreInterval;
+        let shapeSpawnTimer;
+        let safeColorTimer;
+        let animationFrameId;
+        let keysPressed = {};
+        let musicStarted = false;
+        let lastDifficultyIncreaseScore = 0;
+        let plusOneLifeText = { visible: false, x: 0, y: 0, alpha: 0, timer: null };
+
+        // --- UI Elements ---
+        const scoreDisplay = document.getElementById('score');
+        const livesDisplay = document.getElementById('lives');
+        const safeColorDisplay = document.getElementById('safe-color-display');
+        const safeCollectedDisplay = document.getElementById('safe-collected');
+        const gameOverMessage = document.getElementById('game-over-message');
+        const finalScoreDisplay = document.getElementById('final-score');
+        const restartButton = document.getElementById('restart-button');
+
+        // --- Audio Setup (Tone.js) ---
+        let synth;
+        let musicLoop;
+        function setupMusic() { /* ... (same as before) ... */
+            if (synth) return;
+            synth = new Tone.Synth({ oscillator: { type: 'triangle' }, envelope: { attack: 0.01, decay: 0.1, sustain: 0.2, release: 0.5 } }).toDestination();
+            const melody = ['C4', 'E4', 'G4', 'E4'];
+            let noteIndex = 0;
+            musicLoop = new Tone.Loop(time => { synth.triggerAttackRelease(melody[noteIndex % melody.length], '8n', time); noteIndex++; }, '4n');
+            Tone.Transport.bpm.value = 100;
+        }
+        function startMusic() { /* ... (same as before) ... */
+            if (Tone.context.state !== 'running') {
+                Tone.start().then(() => { console.log("Audio Context started."); if (!musicStarted) { setupMusic(); Tone.Transport.start(); musicLoop.start(0); musicStarted = true; console.log("Music started."); } }).catch(e => { console.error("Error starting Tone.js:", e); });
+            } else if (!musicStarted) { setupMusic(); Tone.Transport.start(); musicLoop.start(0); musicStarted = true; console.log("Music started (context already running)."); }
+        }
+        function stopMusic() { /* ... (same as before) ... */
+            if (musicLoop && musicStarted) { musicLoop.stop(0); Tone.Transport.stop(); musicStarted = false; console.log("Music stopped."); }
+        }
+
+        // --- Drawing Functions ---
+
+        function drawSun() {
+            ctx.fillStyle = sunColor;
+            ctx.beginPath();
+            ctx.arc(sunRadius + 15, sunRadius + 15, sunRadius, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        // Function to draw simple clouds
+        function drawClouds() {
+            ctx.fillStyle = cloudColor;
+            ctx.globalAlpha = 0.8; // Make clouds slightly transparent
+
+            // Cloud 1 (group of circles)
+            ctx.beginPath();
+            ctx.arc(100, 70, 20, 0, Math.PI * 2); // Center
+            ctx.arc(125, 75, 25, 0, Math.PI * 2); // Right
+            ctx.arc(80, 80, 18, 0, Math.PI * 2);  // Left
+            ctx.fill();
+
+            // Cloud 2
+            ctx.beginPath();
+            ctx.arc(canvas.width - 150, 90, 25, 0, Math.PI * 2);
+            ctx.arc(canvas.width - 120, 85, 30, 0, Math.PI * 2);
+            ctx.arc(canvas.width - 180, 95, 20, 0, Math.PI * 2);
+            ctx.fill();
+
+             // Cloud 3 (smaller)
+            ctx.beginPath();
+            ctx.arc(canvas.width / 2, 50, 15, 0, Math.PI * 2);
+            ctx.arc(canvas.width / 2 + 20, 55, 18, 0, Math.PI * 2);
+            ctx.fill();
+
+
+            ctx.globalAlpha = 1.0; // Reset alpha
+        }
+
+         // Function to draw simple trees
+        function drawTrees() {
+            const treeData = [ // Define positions and sizes for trees
+                { x: 50, trunkH: 40, leavesR: 25 },
+                { x: canvas.width - 80, trunkH: 50, leavesR: 30 },
+                { x: 200, trunkH: 35, leavesR: 20 },
+                { x: canvas.width - 220, trunkH: 45, leavesR: 28 },
+            ];
+
+            treeData.forEach(tree => {
+                const trunkWidth = 10;
+                const trunkX = tree.x - trunkWidth / 2;
+                const trunkY = canvas.height - grassHeight - tree.trunkH;
+                const leavesX = tree.x;
+                const leavesY = trunkY; // Leaves start at the top of the trunk
+
+                // Draw trunk
+                ctx.fillStyle = treeTrunkColor;
+                ctx.fillRect(trunkX, trunkY, trunkWidth, tree.trunkH);
+
+                // Draw leaves (simple circle)
+                ctx.fillStyle = treeLeavesColor;
+                ctx.beginPath();
+                ctx.arc(leavesX, leavesY, tree.leavesR, 0, Math.PI * 2);
+                ctx.fill();
+            });
+        }
+
+
+        function drawPlayer() {
+            // Define coordinates relative to playerX, playerY (top-left of bounding box)
+            const playerTopY = canvas.height - grassHeight - playerHeight;
+            const headRadius = 7;
+            const headX = playerX + playerWidth / 2;
+            const headY = playerTopY + headRadius; // Position head Y
+            const bodyHeight = playerHeight * 0.5; // Shorter body
+            const bodyWidth = 4;
+            const bodyX = headX - bodyWidth / 2;
+            const bodyY = headY + headRadius; // Body starts below head
+            const legLength = playerHeight - bodyHeight - (headRadius * 2) - 5; // Calculate remaining length for legs
+            const feetY = canvas.height - grassHeight - 5; // Y position for feet bottom
+            const shoeWidth = 8;
+            const shoeHeight = 5;
+
+            ctx.fillStyle = '#333'; // Player color
+
+            // Head
+            ctx.beginPath();
+            ctx.arc(headX, headY, headRadius, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Smile
+            ctx.strokeStyle = '#333'; // Smile color
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            // Arc parameters: x, y, radius, startAngle, endAngle
+            ctx.arc(headX, headY + 2, headRadius * 0.5, Math.PI * 0.2, Math.PI * 0.8); // Draw smile arc
+            ctx.stroke();
+
+
+            // Body
+            ctx.fillRect(bodyX, bodyY, bodyWidth, bodyHeight);
+
+            // Legs
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 3; // Same thickness as arms
+            // Left Leg
+            ctx.beginPath();
+            ctx.moveTo(headX - bodyWidth/2, bodyY + bodyHeight); // Start from bottom-left of body
+            ctx.lineTo(playerX + shoeWidth / 2, feetY - shoeHeight / 2); // End near left shoe top
+            ctx.stroke();
+            // Right Leg
+            ctx.beginPath();
+            ctx.moveTo(headX + bodyWidth/2, bodyY + bodyHeight); // Start from bottom-right of body
+            ctx.lineTo(playerX + playerWidth - shoeWidth / 2, feetY - shoeHeight / 2); // End near right shoe top
+            ctx.stroke();
+
+
+            // Arms
+            ctx.beginPath();
+            ctx.moveTo(headX, bodyY + 5); // Start arms from body center-ish
+            ctx.lineTo(playerX - 5, bodyY + 15); // Left arm slightly out
+            ctx.moveTo(headX, bodyY + 5);
+            ctx.lineTo(playerX + playerWidth + 5, bodyY + 15); // Right arm slightly out
+            ctx.stroke();
+
+
+            // Shoes (Drawn last to be on top of leg ends)
+            ctx.fillStyle = shoeColor;
+            ctx.fillRect(playerX, feetY - shoeHeight, shoeWidth, shoeHeight); // Left Shoe
+            ctx.fillRect(playerX + playerWidth - shoeWidth, feetY - shoeHeight, shoeWidth, shoeHeight); // Right Shoe
+        }
+
+
+        function drawGrass() {
+            ctx.fillStyle = '#2ECC71';
+            ctx.fillRect(0, canvas.height - grassHeight, canvas.width, grassHeight);
+        }
+
+        function drawShape(shape) {
+            ctx.fillStyle = shape.color;
+            ctx.fillRect(shape.x, shape.y, shapeSize, shapeSize);
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 1;
+            ctx.strokeRect(shape.x, shape.y, shapeSize, shapeSize);
+        }
+
+        function drawPlusOneLifeText() {
+            if (plusOneLifeText.visible) {
+                plusOneLifeText.alpha -= 0.015;
+                plusOneLifeText.y -= 0.5;
+                if (plusOneLifeText.alpha <= 0) {
+                    plusOneLifeText.visible = false;
+                } else {
+                    ctx.fillStyle = `rgba(0, 128, 0, ${plusOneLifeText.alpha})`;
+                    ctx.font = 'bold 16px "Press Start 2P"';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('+1 ❤️', plusOneLifeText.x, plusOneLifeText.y);
+                    ctx.textAlign = 'left';
+                }
+            }
+        }
+
+        // --- UI Update ---
+        function updateUI() { /* ... (same as before) ... */
+            scoreDisplay.textContent = `Score: ${score}`;
+            livesDisplay.textContent = `Lives: ${'❤️'.repeat(lives)}`;
+            safeColorDisplay.style.backgroundColor = safeColor;
+            safeCollectedDisplay.textContent = `Safe Hit: ${safeShapesCollected}`;
+        }
+
+        // --- Shape Spawning ---
+        function spawnShape() { /* ... (same as before) ... */
+            if (gameOver) return;
+            let numShapesToSpawn;
+            if (score >= fixedShapesScoreThreshold) { numShapesToSpawn = fixedShapesAfterScore; }
+            else { numShapesToSpawn = 1; if (Math.random() < multiSpawnChance) { numShapesToSpawn = Math.floor(Math.random() * maxShapesPerSpawn) + 1; } }
+            for (let i = 0; i < numShapesToSpawn; i++) {
+                let x; let tooClose; let attempts = 0;
+                do { tooClose = false; x = Math.random() * (canvas.width - shapeSize);
+                    for(let j = shapes.length - i; j < shapes.length; j++) { if (Math.abs(shapes[j].x - x) < shapeSize * 1.5) { tooClose = true; break; } }
+                    attempts++;
+                } while (tooClose && attempts < 10);
+                const color = colors[Math.floor(Math.random() * colors.length)];
+                shapes.push({ x: x, y: -shapeSize - (i * shapeSize * 0.5) , color: color });
+            }
+        }
+
+        // --- Change Safe Color ---
+        function changeSafeColor() { /* ... (same as before) ... */
+             if (gameOver) return; let newColor;
+             do { newColor = colors[Math.floor(Math.random() * colors.length)]; } while (newColor === safeColor);
+             safeColor = newColor; updateUI();
+        }
+
+        // --- Update Shape Positions ---
+        function updateShapes() { /* ... (same as before) ... */
+            for (let i = shapes.length - 1; i >= 0; i--) { shapes[i].y += shapeFallSpeed; if (shapes[i].y > canvas.height) { shapes.splice(i, 1); } }
+        }
+
+        // --- Collision Detection ---
+        function checkCollisions() { /* ... (same as before, includes life gain) ... */
+            const playerBottom = canvas.height - grassHeight; const playerTop = playerBottom - playerHeight;
+            const playerLeft = playerX; const playerRight = playerX + playerWidth;
+            for (let i = shapes.length - 1; i >= 0; i--) {
+                const shape = shapes[i]; const shapeTop = shape.y; const shapeBottom = shape.y + shapeSize;
+                const shapeLeft = shape.x; const shapeRight = shape.x + shapeSize;
+                if ( playerLeft < shapeRight && playerRight > shapeLeft && playerTop < shapeBottom && playerBottom > shapeTop ) {
+                    if (shape.color !== safeColor) { lives--; document.body.classList.add('shake'); setTimeout(() => { document.body.classList.remove('shake'); }, 150); if (lives <= 0) { endGame(); }
+                    } else { safeShapesCollected++; if (safeShapesCollected > 0 && safeShapesCollected % safeHitsForLife === 0) { if (lives < initialLives) { lives++; console.log(`Life gained! Total lives: ${lives}`); plusOneLifeText.visible = true; plusOneLifeText.x = playerX + playerWidth / 2; plusOneLifeText.y = canvas.height - grassHeight - playerHeight - 10; plusOneLifeText.alpha = 1.0; clearTimeout(plusOneLifeText.timer); plusOneLifeText.timer = setTimeout(() => { plusOneLifeText.visible = false; }, 1500); } } }
+                    updateUI(); shapes.splice(i, 1); break;
+                }
+            }
+        }
+
+        // --- Player Movement ---
+        function updatePlayerPosition() { /* ... (same as before) ... */
+            if (keysPressed['ArrowLeft'] && playerX > 0) { playerX -= playerSpeed; }
+            if (keysPressed['ArrowRight'] && playerX < canvas.width - playerWidth) { playerX += playerSpeed; }
+            playerX = Math.max(0, Math.min(canvas.width - playerWidth, playerX));
+        }
+
+        // --- Game Loop ---
+        function gameLoop() {
+            if (gameOver) return;
+            animationFrameId = requestAnimationFrame(gameLoop);
+
+            // 1. Clear Canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // 2. Draw Background Elements (Order: Back to Front)
+            drawSun();
+            drawClouds(); // Draw clouds behind trees/grass
+            drawGrass();
+            drawTrees(); // Draw trees on top of grass
+
+            // 3. Update Game State
+            updatePlayerPosition();
+            updateShapes();
+            checkCollisions();
+
+            // 4. Draw Foreground Elements
+            drawPlayer(); // Draw player on top of background
+            shapes.forEach(drawShape); // Draw shapes
+
+            // 5. Draw Effects/Overlays
+            drawPlusOneLifeText(); // Draw floating text last
+        }
+
+        // --- Difficulty Increase Logic ---
+        function increaseDifficulty() { /* ... (same as before) ... */
+             shapeFallSpeed += 0.2; if (score < fixedShapesScoreThreshold) { multiSpawnChance = Math.min(maxMultiSpawnChance, multiSpawnChance + 0.02); }
+             console.log(`Difficulty Check: Score=${score}, Speed=${shapeFallSpeed.toFixed(1)}, SpawnChance=${multiSpawnChance.toFixed(2)}`); lastDifficultyIncreaseScore = score;
+        }
+
+        // --- Start Game ---
+        function startGame() { /* ... (same as before) ... */
+            startMusic(); playerX = canvas.width / 2 - playerWidth / 2; lives = initialLives; score = 0; safeShapesCollected = 0; shapes = []; gameOver = false; keysPressed = {}; safeColor = colors[Math.floor(Math.random() * colors.length)]; shapeFallSpeed = initialShapeFallSpeed; multiSpawnChance = initialMultiSpawnChance; lastDifficultyIncreaseScore = 0; plusOneLifeText.visible = false; clearTimeout(plusOneLifeText.timer);
+            clearInterval(scoreInterval); clearInterval(shapeSpawnTimer); clearInterval(safeColorTimer); cancelAnimationFrame(animationFrameId);
+            gameOverMessage.style.display = 'none'; updateUI();
+            scoreInterval = setInterval(() => { if (!gameOver) { score++; if (score > 0 && score % difficultyIncreaseInterval === 0 && score !== lastDifficultyIncreaseScore) { increaseDifficulty(); } updateUI(); } }, 1000);
+            shapeSpawnTimer = setInterval(spawnShape, shapeSpawnInterval); safeColorTimer = setInterval(changeSafeColor, safeColorChangeInterval);
+            animationFrameId = requestAnimationFrame(gameLoop);
+        }
+
+        // --- End Game ---
+        function endGame() { /* ... (same as before) ... */
+            gameOver = true; clearInterval(scoreInterval); clearInterval(shapeSpawnTimer); clearInterval(safeColorTimer); cancelAnimationFrame(animationFrameId); stopMusic(); finalScoreDisplay.textContent = `Final Score: ${score}`; gameOverMessage.style.display = 'block';
+        }
+
+        // --- Event Listeners ---
+        window.addEventListener('keydown', (e) => { /* ... (same as before) ... */
+            keysPressed[e.key] = true; if (["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", " "].includes(e.key)) { e.preventDefault(); }
+        });
+        window.addEventListener('keyup', (e) => { /* ... (same as before) ... */
+            keysPressed[e.key] = false;
+        });
+        restartButton.addEventListener('click', startGame);
+
+        // --- Initial Setup ---
+        window.onload = () => {
+            // Perform initial draw in correct order
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawSun();
+            drawClouds();
+            drawGrass();
+            drawTrees();
+            drawPlayer();
+            updateUI();
+            startGame(); // Start game logic
+        };
+
+    </script>
+</body>
+</html>
+<!-- Compare this snippet from scratch/styles.css: -->

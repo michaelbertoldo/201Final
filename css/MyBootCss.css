@@ -1,0 +1,49 @@
+.h1n{color:rgb(219, 233, 246)}
+
+.h1w{color:rgb(218, 127, 23)}
+
+p:hover, h1:hover, h2:hover, h3:hover, h4:hover, h5:hover, h6:hover, img:hover, a:hover {
+    transition: transform 0.3s ease;
+    transform: scale(1.05);
+}
+
+h1{
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+  }
+
+  .underline-hover:hover {
+    text-decoration: underline;
+    text-underline-offset: 4px;
+  }
+
+  .rounded-btn {
+    border: none;
+    border-radius: 50px;
+    padding: 10px 20px;
+    background-color: #3498db;
+    color: white;
+    cursor: pointer;
+  }
+  
+  .rounded-btn:hover {
+    background-color: #2980b9;
+  }
+
+  .fade-in {
+    opacity: 0;
+    animation: fadeIn 1s ease-in forwards;
+  }
+  @keyframes fadeIn {
+    to {
+      opacity: 1;
+    }
+  }
+  .slide-in {
+    transform: translateX(-100%);
+    animation: slideIn 0.5s ease-in forwards;
+  }
+  @keyframes slideIn {
+    to {
+      transform: translateX(0);
+    }
+  }
